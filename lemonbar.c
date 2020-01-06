@@ -1,8 +1,11 @@
 // vim:sw=4:ts=4:et:
+#include <fcntl.h>
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <sys/types.h>
+#include <sys/stat.h>
 #include <math.h>
 #include <string.h>
 #include <ctype.h>
@@ -26,7 +29,7 @@
 #include <X11/Xft/Xft.h>
 #include <X11/Xlib-xcb.h>
 
-// Here bet  dragons
+// Here be  dragons
 
 #define max(a,b) ((a) > (b) ? (a) : (b))
 #define min(a,b) ((a) < (b) ? (a) : (b))
@@ -121,6 +124,7 @@ static int offset_y_index = 0;
 static uint32_t attrs = 0;
 static bool dock = false;
 static bool topbar = true;
+static bool reread = false;
 static int rotate_text = 0; // not rotated (0), 90deg (1), -90deg (2)
 static int bw = -1, bh = -1, bx = 0, by = 0;
 static int bu = 1; // Underline height
@@ -132,7 +136,7 @@ static area_stack_t area_stack;
 xcb_render_fixed_t
 float_to_fixed(float f)
 {
-	return f * 0x10000;
+    return f * 0x10000;
 }
 
 xcb_rectangle_t
@@ -716,7 +720,7 @@ parse (char *text)
 
     for (;;) {
         if (*p == '\0' || *p == '\n')
-			break;
+            break;
 
         if (p[0] == '%' && p[1] == '{' && (block_end = strchr(p++, '}'))) {
             p++;
@@ -769,10 +773,10 @@ parse (char *text)
                               }
                               else
                               { p++; continue; }
-					          XftDrawDestroy (xft_draw);
-					          if (!(xft_draw = XftDrawCreate (dpy, cur_mon->pixmap, visual_ptr , colormap ))) {
-						        fprintf(stderr, "Couldn't create xft drawable\n");
-					          }
+                              XftDrawDestroy (xft_draw);
+                              if (!(xft_draw = XftDrawCreate (dpy, cur_mon->pixmap, visual_ptr , colormap ))) {
+                                fprintf(stderr, "Couldn't create xft drawable\n");
+                              }
 
                               p++;
                               pos_x = 0;
@@ -1260,7 +1264,7 @@ get_visual (void)
 
     //Fallback
     visual_ptr = DefaultVisual(dpy, scr_nbr);
-	return scr->root_visual;
+    return scr->root_visual;
 }
 
 // Parse an X-styled geometry string, we don't support signed offsets though.
@@ -1326,7 +1330,7 @@ xconn (void)
         exit (EXIT_FAILURE);
     }
 
-	XSetEventQueueOwner(dpy, XCBOwnsEventQueue);
+    XSetEventQueueOwner(dpy, XCBOwnsEventQueue);
 
     if (xcb_connection_has_error(c)) {
         fprintf(stderr, "Couldn't connect to X\n");
@@ -1337,7 +1341,7 @@ xconn (void)
     scr = xcb_setup_roots_iterator(xcb_get_setup(c)).data;
 
     /* Try to get a RGBA visual and build the colormap for that */
-	visual = get_visual();
+    visual = get_visual();
     colormap = xcb_generate_id(c);
     xcb_create_colormap(c, XCB_COLORMAP_ALLOC_NONE, colormap, scr->root, visual);
 }
@@ -1372,7 +1376,7 @@ init (char *wm_name)
     qe_reply = xcb_get_extension_data(c, &xcb_randr_id);
 
     if (qe_reply && qe_reply->present) {
-		get_randr_monitors();
+        get_randr_monitors();
     } else {
         qe_reply = xcb_get_extension_data(c, &xcb_xinerama_id);
 
@@ -1485,10 +1489,16 @@ cleanup (void)
 void
 sighandle (int signal)
 {
-    if (signal == SIGINT || signal == SIGTERM)
-        exit(EXIT_SUCCESS);
+    switch (signal) {
+        case SIGUSR1:
+            reread = true;
+            system("notify-send lmao");
+            break;
+        case SIGINT:
+        case SIGTERM:
+            exit(EXIT_SUCCESS);
+    }
 }
-
 
 int
 main (int argc, char **argv)
@@ -1506,13 +1516,15 @@ main (int argc, char **argv)
     char input[4096] = {0, };
     bool permanent = false;
     int geom_v[4] = { -1, -1, 0, 0 };
-    int ch, areas;
+    int ch, areas, infd = STDIN_FILENO;
     char *wm_name;
+    FILE *infile = stdin;
 
     // Install the parachute!
     atexit(cleanup);
     signal(SIGINT, sighandle);
     signal(SIGTERM, sighandle);
+    signal(SIGUSR1, sighandle);
 
     // B/W combo
     dbgc = bgc = (rgba_t)0x00000000U;
@@ -1526,11 +1538,11 @@ main (int argc, char **argv)
     // Connect to the Xserver and initialize scr
     xconn();
 
-    while ((ch = getopt(argc, argv, "hg:bsSdf:a:pu:B:F:U:R:n:o:r:")) != -1) {
+    while ((ch = getopt(argc, argv, "hg:bsSdf:a:pu:B:F:U:R:n:o:r:l:")) != -1) {
         switch (ch) {
             case 'h':
                 printf ("lemonbar version %s\n", VERSION);
-                printf ("usage: %s [-h | -g | -b | -d | -f | -a | -p | -n | -u | -B | -F | -R | -r]\n"
+                printf ("usage: %s [-h | -g | -b | -d | -f | -a | -p | -n | -u | -B | -F | -R | -r | -o | -l]\n"
                         "\t-h Show this help\n"
                         "\t-g Set the bar geometry {width}x{height}+{xoffset}+{yoffset}\n"
                         "\t-b Put the bar at the bottom of the screen\n"
@@ -1546,7 +1558,8 @@ main (int argc, char **argv)
                         "\t-F Set foreground color in #AARRGGBB\n"
                         "\t-R Set border color in #AARRGGBB\n"
                         "\t-r Set border size in px\n"
-                        "\t-o Add a vertical offset to the text, it can be negative\n", argv[0]);
+                        "\t-o Add a vertical offset to the text, it can be negative\n"
+                        "\t-l Set the file to read from\n", argv[0]);
                 exit (EXIT_SUCCESS);
             case 'g': (void)parse_geometry_string(optarg, geom_v); break;
             case 'p': permanent = true; break;
@@ -1564,6 +1577,12 @@ main (int argc, char **argv)
             case 'R': bbgc = parse_color(optarg, NULL, (rgba_t)0x00000000U); break;
             case 'r': bsize = strtoul(optarg, NULL, 10); break;
             case 'a': areas = strtoul(optarg, NULL, 10); break;
+            case 'l':
+                if (access(optarg, R_OK) != -1) {
+                    infd = pollin[0].fd = open(optarg, O_RDONLY);
+                    infile = fdopen(pollin[0].fd, "r");
+                }
+                break;
         }
     }
 
@@ -1603,6 +1622,10 @@ main (int argc, char **argv)
 
     for (;;) {
         bool redraw = false;
+        if (reread) {
+            rewind(infile);
+            pollin[0].fd = infd;
+        }
 
         // If connection is in error state, then it has been shut down.
         if (xcb_connection_has_error(c))
@@ -1614,8 +1637,8 @@ main (int argc, char **argv)
                 else break;                         // ...bail out
             }
             if (pollin[0].revents & POLLIN) { // New input, process it
-                if (fgets(input, sizeof(input), stdin) == NULL)
-                    break; // EOF received
+                if (fgets(input, sizeof(input), infile) == NULL)
+                    continue;                 // EOF received
 
                 parse(input);
                 redraw = true;
@@ -1633,13 +1656,13 @@ main (int argc, char **argv)
                             press_ev = (xcb_button_press_event_t *)ev;
                             {
                                 area_t *area = NULL;
-                                if (rotate_text == 0){
+                                if (rotate_text == 0)
                                     area = area_get(press_ev->event, press_ev->detail, press_ev->event_x);
-                                } else if (rotate_text == 1) {
-                                    area = area_get(press_ev->event, press_ev->detail, press_ev->event_y);
-                                } else if (rotate_text == 2) {
-                                    area = area_get(press_ev->event, press_ev->detail, monhead->width - press_ev->event_y);
-                                }
+                                else if (rotate_text == 1)
+                                  area = area_get(press_ev->event, press_ev->detail, press_ev->event_y);
+                                else if (rotate_text == 2)
+                                  area = area_get(press_ev->event, press_ev->detail, monhead->width - press_ev->event_y);
+
 
                                 // Respond to the click
                                 if (area) {
@@ -1674,6 +1697,11 @@ main (int argc, char **argv)
         }
 
         xcb_flush(c);
+    }
+
+    if (infile != stdin) {
+        close(infd);
+        fclose(infile);
     }
 
     return EXIT_SUCCESS;
