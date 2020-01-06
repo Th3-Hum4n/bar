@@ -6,7 +6,7 @@ lemonbar - Featherweight lemon-scented bar
 
 =head1 SYNOPSIS
 
-I<lemonbar> [-h | -g I<width>B<x>I<height>B<+>I<x>B<+>I<y> | -b | -d | -f I<font> | -p | -n I<name> | -u I<pixel> | -B I<color> | -F I<color> | -r I<size> | -o I<offset> | -l I<name> ]
+I<lemonbar> [-h | -g I<width>B<x>I<height>B<+>I<x>B<+>I<y> | -b | -d | -f I<font> | -p | -n I<name> | -u I<pixel> | -B I<color> | -F I<color> | -r I<size> | -o I<offset> | -l I<path> ]
 
 =head1 DESCRIPTION
 
@@ -81,9 +81,9 @@ Rotate text 90deg to the left
 
 Add a vertical offset to the text. I<offset> must be a number and can be negative. I<-o -3> will push the text 3 pixels up.
 
-=item B<-l> I<name>
+=item B<-l> I<path>
 
-Set the file to read from
+Set the path of the file to read text from
 
 =back
 
@@ -213,4 +213,4 @@ Xft support was added by krypt-n
 
 Borders support was added by dark-yux
 
-Rotated text was added by venam
+Rotatable text was added by venam

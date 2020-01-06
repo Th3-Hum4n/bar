@@ -1559,7 +1559,7 @@ main (int argc, char **argv)
                         "\t-R Set border color in #AARRGGBB\n"
                         "\t-r Set border size in px\n"
                         "\t-o Add a vertical offset to the text, it can be negative\n"
-                        "\t-l Set the file to read from\n", argv[0]);
+                        "\t-l Set the path of the file to read text from\n", argv[0]);
                 exit (EXIT_SUCCESS);
             case 'g': (void)parse_geometry_string(optarg, geom_v); break;
             case 'p': permanent = true; break;
