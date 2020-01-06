@@ -6,7 +6,7 @@ lemonbar - Featherweight lemon-scented bar
 
 =head1 SYNOPSIS
 
-I<lemonbar> [-h | -g I<width>B<x>I<height>B<+>I<x>B<+>I<y> | -b | -d | -f I<font> | -p | -n I<name> | -u I<pixel> | -B I<color> | -F I<color> | -o I<offset>]
+I<lemonbar> [-h | -g I<width>B<x>I<height>B<+>I<x>B<+>I<y> | -b | -d | -f I<font> | -p | -n I<name> | -u I<pixel> | -B I<color> | -F I<color> | -r I<size> | -o I<offset> | -l I<name> ]
 
 =head1 DESCRIPTION
 
@@ -69,9 +69,21 @@ Set the border color of the bar. Accepts the same color formats as B<-B>.
 
 Add a border with the specified size. I<size> must be a number in pixels.
 
+=item B<-s>
+
+Rotate text 90deg to the right
+
+=item B<-S>
+
+Rotate text 90deg to the left
+
 =item B<-o> I<offset>
 
 Add a vertical offset to the text. I<offset> must be a number and can be negative. I<-o -3> will push the text 3 pixels up.
+
+=item B<-l> I<name>
+
+Set the file to read from
 
 =back
 
@@ -196,3 +208,9 @@ Xinerama support was kindly contributed by Stebalien
 RandR support was kindly contributed by jvvv
 
 Clickable areas support was heavily based off u-ra contribution
+
+Xft support was added by krypt-n
+
+Borders support was added by dark-yux
+
+Rotated text was added by venam
