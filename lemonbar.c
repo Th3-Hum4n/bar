@@ -1492,7 +1492,6 @@ sighandle (int signal)
     switch (signal) {
         case SIGUSR1:
             reread = true;
-            system("notify-send lmao");
             break;
         case SIGINT:
         case SIGTERM:
