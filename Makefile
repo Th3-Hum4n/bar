@@ -7,7 +7,7 @@ ifneq "$(GIT_DESC)" ""
 endif
 
 CC	?= gcc
-CFLAGS += -Wall -std=c99 -Os -DVERSION="\"$(VERSION)\"" -I/usr/include/freetype2
+CFLAGS += -Wall -Os -DVERSION="\"$(VERSION)\"" -I/usr/include/freetype2
 LDFLAGS += -lxcb -lxcb-xinerama -lxcb-randr -lxcb-ewmh \
 		   -lxcb-render -lxcb-render-util -lm -lX11 -lX11-xcb -lXft -lfreetype -lz -lfontconfig
 CFDEBUG = -g3 -pedantic -Wall -Wunused-parameter -Wlong-long \
@@ -35,12 +35,12 @@ debug: ${EXEC}
 debug: CC += ${CFDEBUG}
 
 clean:
-	rm -f ./*.o ./*.1
+	rm -f ./*.o
 	rm -f ./${EXEC}
 
 install: lemonbar doc
 	install -D -m 755 lemonbar ${DESTDIR}${BINDIR}/lemonbar
-	install -D -m 644 lemonbar.1 ${HOME}/usr/man/man1/lemonbar.1
+	install -D -m 644 lemonbar.1 ${DESTDIR}${PREFIX}/share/man/man1/lemonbar.1
 
 uninstall:
 	rm -f ${DESTDIR}${BINDIR}/lemonbar
