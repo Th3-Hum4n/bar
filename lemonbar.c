@@ -987,7 +987,7 @@ monitor_new (int x, int y, int width, int height)
     } else {
         // don't shrink the bar when a size is passed
         // when a size isn't specified (==width) use the height instead
-        ret->width = (bw == width ? height : bw);
+        ret->width = (bw == width ? bw : height);
     }
     ret->next = ret->prev = NULL;
     ret->window = xcb_generate_id(c);
@@ -1605,6 +1605,10 @@ main (int argc, char **argv)
     bh = geom_v[1];
     bx = geom_v[2];
     by = geom_v[3];
+	if (rotate_text > 0) {
+		bw = geom_v[1];
+		bh = geom_v[0];
+	}
 
     // Do the heavy lifting
     init(wm_name);
@@ -1682,12 +1686,12 @@ main (int argc, char **argv)
                 if (rotate_text != 0) {
                     xcb_pixmap_t rotate_pmap = xcb_generate_id(c);
                     // reverse width and height
-                    xcb_create_pixmap(c, mon->depth, rotate_pmap, mon->window, bh, mon->width);
+                    xcb_create_pixmap(c, mon->depth, rotate_pmap, mon->window, bh, bw);
                     xcb_change_gc(c, gc[GC_DRAW], XCB_GC_FOREGROUND, (const uint32_t []){ fgc.v });
                     xcb_poly_fill_rectangle(c, rotate_pmap, gc[GC_DRAW], 1,
-                              (const xcb_rectangle_t []){ { 0, 0, bh, mon->width } });
+                              (const xcb_rectangle_t []){ { 0, 0, bh, bw } });
                     rotate_pixmap(c, mon->pixmap, rotate_pmap, fmtid);
-                    xcb_copy_area(c, rotate_pmap, mon->window, gc[GC_DRAW], 0, 0, 0, 0, bh, mon->width);
+                    xcb_copy_area(c, rotate_pmap, mon->window, gc[GC_DRAW], 0, 0, 0, 0, bh, bw);
                     xcb_free_pixmap(c, rotate_pmap);
                 } else {
                     xcb_copy_area(c, mon->pixmap, mon->window, gc[GC_DRAW], 0, 0, 0, 0, mon->width, bh);
