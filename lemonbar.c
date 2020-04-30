@@ -987,7 +987,7 @@ monitor_new (int x, int y, int width, int height)
     } else {
         // don't shrink the bar when a size is passed
         // when a size isn't specified (==width) use the height instead
-        ret->width = (bw == width ? bw : height);
+        ret->width = bw;
     }
     ret->next = ret->prev = NULL;
     ret->window = xcb_generate_id(c);
